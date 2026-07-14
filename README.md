@@ -39,6 +39,10 @@ client.connect()
 # Connect to iBoss (With MFA / TOTP)
 client_mfa = IBossClient("username@domain.com", "YourPassword", totp="123456")
 client_mfa.connect()
+
+# Connect to iBoss (With API Token)
+client_token = IBossClient(api_token="your-api-token", api_username="your-api-username")
+client_token.connect()
 ```
 
 ## Usage Examples

@@ -16,10 +16,13 @@ class IBossClient:
     Client for interacting with iBoss Secure Cloud Gateways.
     """
     
-    def __init__(self, username: str, password: str, totp: Optional[str] = None):
+    def __init__(self, username: Optional[str] = None, password: Optional[str] = None, totp: Optional[str] = None,
+                 api_token: Optional[str] = None, api_username: Optional[str] = None):
         self.username = username
         self.password = password
         self.totp = totp
+        self.api_token = api_token
+        self.api_username = api_username
         
         # Session state
         self.auth_token = None
@@ -46,40 +49,46 @@ class IBossClient:
         Equivalent to Connect-iBoss.
         """
         logger.info("Connecting to iBoss...")
-        
-        # --- STEP 1: LOGIN (Get Token & Cookies) ---
-        login_uri = "/ibossauth/web/tokens?ignoreAuthModule=true"
-        if self.totp:
-            login_uri += f"&totpCode={self.totp}"
+        if self.api_token:
+            self.auth_token = f"Bearer {self.api_token}"
+            logger.info("Skipped credential login. Using provided API Bearer token.")
+        else:
+            if not self.username or not self.password:
+                raise ValueError("Must provide either (username and password) or api_token")
+                
+            # --- STEP 1: LOGIN (Get Token & Cookies) ---
+            login_uri = "/ibossauth/web/tokens?ignoreAuthModule=true"
+            if self.totp:
+                login_uri += f"&totpCode={self.totp}"
+                
+            full_login_url = f"{self.domains['Authentication']}{login_uri}"
             
-        full_login_url = f"{self.domains['Authentication']}{login_uri}"
-        
-        plain_auth = f"{self.username}:{self.password}"
-        basic_auth = base64.b64encode(plain_auth.encode('iso-8859-1')).decode('utf-8')
-        
-        headers = {
-            "Authorization": f"Basic {basic_auth}",
-            "User-Agent": "ibossAPI",
-            "Accept": "application/json"
-        }
-        
-        response = self.session.get(full_login_url, headers=headers)
-        
-        if response.status_code >= 400:
-            if "MULTIFACTOR_CREDENTIALS_REQUIRED" in response.text:
-                raise IBossAuthError("Login Failed: Multi-Factor Authentication is required. Provide a TOTP code.")
-            raise IBossAuthError(f"Login failed (Status {response.status_code}): {response.text}")
+            plain_auth = f"{self.username}:{self.password}"
+            basic_auth = base64.b64encode(plain_auth.encode('iso-8859-1')).decode('utf-8')
             
-        # Parse Token
-        token_obj = response.json()
-        raw_token = token_obj.get("token") or token_obj
-        self.auth_token = f"Token {raw_token}"
-        
-        # Parse Cookies and XSRF Token
-        for cookie in self.session.cookies:
-            self.cookies[cookie.name] = cookie.value
-            if cookie.name == 'XSRF-TOKEN':
-                self.xsrf_token = cookie.value
+            headers = {
+                "Authorization": f"Basic {basic_auth}",
+                "User-Agent": "ibossAPI",
+                "Accept": "application/json"
+            }
+            
+            response = self.session.get(full_login_url, headers=headers)
+            
+            if response.status_code >= 400:
+                if "MULTIFACTOR_CREDENTIALS_REQUIRED" in response.text:
+                    raise IBossAuthError("Login Failed: Multi-Factor Authentication is required. Provide a TOTP code.")
+                raise IBossAuthError(f"Login failed (Status {response.status_code}): {response.text}")
+                
+            # Parse Token
+            token_obj = response.json()
+            raw_token = token_obj.get("token") or token_obj
+            self.auth_token = f"Token {raw_token}"
+            
+            # Parse Cookies and XSRF Token
+            for cookie in self.session.cookies:
+                self.cookies[cookie.name] = cookie.value
+                if cookie.name == 'XSRF-TOKEN':
+                    self.xsrf_token = cookie.value
                 
         # --- STEP 2: GET ACCOUNT CONTEXT ---
         self.context = self.invoke_request("/ibcloud/web/users/mySettings", service="Core")
