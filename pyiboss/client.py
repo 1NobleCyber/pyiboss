@@ -50,7 +50,7 @@ class IBossClient:
         """
         logger.info("Connecting to iBoss...")
         if self.api_token:
-            self.auth_token = f"Bearer {self.api_token}"
+            self.auth_token = f"Token {self.api_token}"
             logger.info("Skipped credential login. Using provided API Bearer token.")
         else:
             if not self.username or not self.password:
