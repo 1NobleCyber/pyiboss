@@ -66,3 +66,6 @@ venv.bak/
 
 # MacOS
 .DS_Store
+
+# Tests (ignored as requested)
+tests/
