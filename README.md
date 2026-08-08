@@ -96,6 +96,7 @@ print(logs)
 | `blocklist` | Add, get, and remove domains from the Block List. |
 | `logs` | Retrieve log entries, tables, and domain icons with full filtering and parsing. |
 | `groups` | Retrieve iBoss group configurations. |
+| `policy_layers` | Manage URLs and settings within iBoss Policy Layers (Category-Based, Lists, Microsoft Tenant Restrictions). |
 | `urls` | Lookup URL categorization and submit URLs for recategorization. |
 
 ## Contributing
