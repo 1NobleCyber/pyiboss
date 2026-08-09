@@ -47,6 +47,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+tests/
 cover/
 
 # Environments
@@ -66,4 +67,3 @@ venv.bak/
 
 # MacOS
 .DS_Store
-tests/
